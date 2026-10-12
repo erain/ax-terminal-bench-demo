@@ -1,0 +1,86 @@
+# Terminal-Bench 2.0 `fix-git` demo on AX.
+#
+# Apply with:  ax apply -f ax/task.yaml
+# Watch with:  ax watch task tb-fix-git-demo
+# Results:     ax ssh tb-fix-git-demo -- cat /workspace/results.json
+#
+# The Task runs demo/run-demo.sh inside the default AX task-runner image
+# (Python + git), which: sets up the fix-git scenario, runs an agent
+# (Claude Code headless when ANTHROPIC_API_KEY is set, else a deterministic
+# reference solver), grades with the upstream md5 tests, and writes
+# /workspace/results.json.
+
+apiVersion: ax.io/v1alpha1
+kind: Workspace
+metadata:
+  name: demo-workspace
+  atespace: default
+spec:
+  git:
+    - name: origin
+      # Clone of this repo is checked out into /workspace before the Task starts.
+      repo: "https://github.com/erain/ax-terminal-bench-demo.git"
+      branch: "main"
+---
+apiVersion: ax.io/v1alpha1
+kind: Task
+metadata:
+  name: tb-fix-git-demo
+  atespace: default
+spec:
+  # Image intentionally omitted: the server runs the default task-runner
+  # image (Python with git), which is all this demo needs.
+  command:
+    - "/workspace/demo/run-demo.sh"
+  env:
+    # Which solver to run: "auto" (default), "llm", or "script".
+    # "auto" picks the LLM agent when a real key is present, else the
+    # deterministic reference solver.
+    - name: AGENT
+      value: "auto"
+    # Any OpenAI-compatible provider works. Defaults target DeepSeek
+    # (cheap, verified working); swap in Zhipu GLM or OpenAI as needed:
+    #   GLM: https://open.bigmodel.cn/api/paas/v4 / glm-4.5-air
+    - name: LLM_BASE_URL
+      value: "https://api.deepseek.com/v1"
+    - name: LLM_MODEL
+      value: "deepseek-chat"
+    # SECURITY NOTE: Task env vars are plain values in the manifest
+    # (ax.io/v1alpha1 has no secretKeyRef for Task env today). Do NOT commit
+    # your real key: keep this file local-only or inject the key right before
+    # `ax apply`, e.g.:
+    #   LLM_API_KEY=... ax apply -f <(envsubst < ax/task.yaml)
+    - name: LLM_API_KEY
+      value: "PASTE_YOUR_KEY_HERE"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+  workspaces:
+    # First workspace is the task command's working directory.
+    - name: demo-workspace
+      path: "/workspace"
+  # Serve guest services so `ax ssh` works for inspection.
+  debug: true
+
+# --- Optional: Model -------------------------------------------------------
+# The Model primitive binds the LLM the AX *platform itself* uses (e.g. for
+# goal-driven workspace setup), with credentials from a Kubernetes secret.
+# This demo's agent brings its own key via Task env, so no Model is needed.
+# Uncomment if you want goal-driven setup:
+#
+# ---
+# apiVersion: ax.io/v1alpha1
+# kind: Model
+# metadata:
+#   name: demo-model
+#   atespace: default
+# spec:
+#   provider: google
+#   model: gemini-3.0-flash
+#   secretKey:
+#     name: gemini-api-secret
+#     key: GEMINI_API_KEY
