@@ -57,7 +57,7 @@ ax ssh tb-fix-git-demo -- git -C /workspace/task/personal-site log --oneline --g
 ```json
 {
   "task": "terminal-bench-2/fix-git",
-  "agent": "claude",
+  "agent": "llm",
   "passed": true,
   "tests": [
     {"name": "test_about_file", "passed": true, "detail": "md5 match"},
@@ -74,9 +74,9 @@ ax ssh tb-fix-git-demo -- git -C /workspace/task/personal-site log --oneline --g
 - `llm` — real agentic run: `demo/agent.py`, a minimal tool-using agent
   (stdlib only, no installs) that talks to any OpenAI-compatible
   chat-completions API with a single `bash` tool. Configure via
-  `LLM_BASE_URL` / `LLM_MODEL` / `LLM_API_KEY`. Defaults: Zhipu GLM
-  (`https://api.deepseek.com/v1`, `deepseek-chat`);
-  DeepSeek (`https://api.deepseek.com/v1`, `deepseek-chat`) works the same.
+  `LLM_BASE_URL` / `LLM_MODEL` / `LLM_API_KEY`. Defaults: DeepSeek
+  (`https://api.deepseek.com/v1`, `deepseek-chat`); Zhipu GLM
+  (`https://open.bigmodel.cn/api/paas/v4`, `glm-4.5-air`) works the same.
   Whichever provider you use, the key needs available quota — a key with no
   balance returns an error and the demo falls back to grading whatever is
   in the repo (see `results.json`).
